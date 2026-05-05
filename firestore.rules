@@ -1,0 +1,84 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // User Profile Rules
+    match /users/{userId} {
+      allow get: if isOwner(userId);
+      allow create: if isOwner(userId) && isValidUser(incoming());
+      allow update: if isOwner(userId) && isValidUser(incoming()) && (
+        incoming().diff(existing()).affectedKeys().hasOnly(['name', 'skills', 'location'])
+      );
+
+      function isValidUser(data) {
+        return data.userId == request.auth.uid
+          && data.name is string && data.name.size() > 0 && data.name.size() <= 100
+          && (!('phone' in data) || (data.phone is string && data.phone.size() <= 20))
+          && data.skills is list
+          && (!('location' in data) || (data.location is string && data.location.size() <= 200))
+          && data.createdAt is string;
+      }
+    }
+
+    // Work Entry Rules
+    match /work_entries/{entryId} {
+      allow list: if isSignedIn() && resource.data.workerId == request.auth.uid;
+      allow get: if isSignedIn() && resource.data.workerId == request.auth.uid;
+      
+      allow create: if isSignedIn() 
+        && incoming().workerId == request.auth.uid 
+        && isValidWorkEntry(incoming());
+
+      allow update: if isSignedIn() 
+        && existing().workerId == request.auth.uid 
+        && isValidWorkEntry(incoming())
+        && incoming().workerId == existing().workerId
+        && (
+          // Worker can edit basic details if unverified
+          (existing().status == 'unverified' && incoming().diff(existing()).affectedKeys().hasOnly(['date', 'description', 'income', 'employerName', 'employerPhone', 'proofUrl']))
+          || 
+          // Status change
+          (incoming().diff(existing()).affectedKeys().hasOnly(['status']))
+        );
+
+      allow delete: if isSignedIn() && existing().workerId == request.auth.uid && existing().status == 'unverified';
+
+      function isValidWorkEntry(data) {
+        return data.workerId == request.auth.uid
+          && data.date is string && data.date.size() <= 50
+          && data.income is number && data.income >= 0
+          && data.status in ['unverified', 'verified', 'rejected']
+          && (!('description' in data) || (data.description is string && data.description.size() <= 500))
+          && (!('employerName' in data) || (data.employerName is string && data.employerName.size() <= 200))
+          && (!('employerPhone' in data) || (data.employerPhone is string && data.employerPhone.size() <= 20))
+          && (!('proofUrl' in data) || (data.proofUrl is string && data.proofUrl.size() <= 1000))
+          && data.createdAt is string;
+      }
+    }
+  }
+}

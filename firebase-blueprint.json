@@ -1,0 +1,45 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "User Profile",
+      "description": "Stores worker profile information.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "The UID of the user." },
+        "name": { "type": "string", "description": "Full name of the worker." },
+        "phone": { "type": "string", "description": "Verified phone number." },
+        "skills": { "type": "array", "items": { "type": "string" }, "description": "List of skills (e.g., Construction, Plumbing)." },
+        "location": { "type": "string", "description": "General working area." },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "name"]
+    },
+    "WorkEntry": {
+      "title": "Work Entry",
+      "description": "A single record of work done and income earned.",
+      "type": "object",
+      "properties": {
+        "workerId": { "type": "string", "description": "Reference to the owner worker." },
+        "date": { "type": "string", "format": "date", "description": "Date of work." },
+        "description": { "type": "string", "description": "Details of the work performed." },
+        "income": { "type": "number", "description": "Amount earned in Rupees." },
+        "employerName": { "type": "string", "description": "Name of the employer or contractor." },
+        "employerPhone": { "type": "string", "description": "Optional contact for verification." },
+        "status": { "type": "string", "enum": ["unverified", "verified", "rejected"], "description": "Verification status of the entry." },
+        "proofUrl": { "type": "string", "description": "URL of an uploaded image/document proof." },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["workerId", "date", "income", "status"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "UserProfile",
+      "description": "Private user profile data."
+    },
+    "/work_entries/{entryId}": {
+      "schema": "WorkEntry",
+      "description": "Work history records owned by workers."
+    }
+  }
+}

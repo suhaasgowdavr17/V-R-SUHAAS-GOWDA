@@ -1,0 +1,14 @@
+{
+  "name": "KaryaSetu: Verifiable Work Ledger",
+  "description": "A simplified platform for informal sector workers to record, store, and verify their work history and income for financial inclusion.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone",
+    "geolocation"
+  ],
+  "majorCapabilities": [
+    "Vocal work logging",
+    "Work history reports",
+    "Employer verification"
+  ]
+}
